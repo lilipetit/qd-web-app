@@ -9,73 +9,43 @@ export default async function handler(req, res) {
   const apiBase = process.env.COZE_API_BASE || 'https://api.coze.cn'
 
   try {
-    // 步骤1: 创建对话
-    const createResponse = await fetch(`${apiBase}/v3/chat`, {
+    console.log('Calling Coze API with bot:', botId)
+    
+    // 使用流式模式直接获取回复
+    const response = await fetch(`${apiBase}/open_api/v2/chat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiToken}`
       },
       body: JSON.stringify({
+        conversation_id: '',
         bot_id: botId,
-        user_id: 'user_' + Date.now(),
-        stream: false,
-        additional_messages: [
-          {
-            role: 'user',
-            content: message,
-            content_type: 'text'
-          }
-        ]
+        user: 'user_' + Date.now(),
+        query: message,
+        stream: false
       })
     })
 
-    if (!createResponse.ok) {
-      throw new Error(`Create chat failed: ${createResponse.status} ${createResponse.statusText}`)
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('Coze API error:', response.status, errorText)
+      throw new Error(`Coze API error: ${response.status} - ${errorText}`)
     }
 
-    const createData = await createResponse.json()
+    const data = await response.json()
+    console.log('Coze response:', JSON.stringify(data).substring(0, 500))
     
-    if (!createData.data || !createData.data.id) {
-      throw new Error('Invalid response from Coze API')
-    }
-
-    const conversationId = createData.data.id
-    
-    // 步骤2: 等待并获取回复（最多等待30秒）
+    // 提取回复内容
     let reply = ''
-    const maxAttempts = 30
-    for (let i = 0; i < maxAttempts; i++) {
-      await new Promise(resolve => setTimeout(resolve, 1000)) // 等待1秒
-      
-      // 查询对话状态
-      const statusResponse = await fetch(`${apiBase}/v3/chat/retrieve?conversation_id=${conversationId}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${apiToken}`
-        }
-      })
-      
-      if (statusResponse.ok) {
-        const statusData = await statusResponse.json()
-        
-        // 检查是否有回复
-        if (statusData.data && statusData.data.messages && statusData.data.messages.length > 0) {
-          const lastMessage = statusData.data.messages[statusData.data.messages.length - 1]
-          if (lastMessage.role === 'assistant' && lastMessage.content) {
-            reply = lastMessage.content
-            break
-          }
-        }
-        
-        // 如果状态是 completed，停止等待
-        if (statusData.data && statusData.data.status === 'completed') {
-          break
-        }
-      }
-    }
-
-    if (!reply) {
+    if (data.msg === 'success' && data.data && data.data.answer) {
+      reply = data.data.answer
+    } else if (data.answer) {
+      reply = data.answer
+    } else if (data.messages && data.messages.length > 0) {
+      const lastMessage = data.messages[data.messages.length - 1]
+      reply = lastMessage.content || lastMessage.answer || ''
+    } else {
       reply = '抱歉，智能体暂时无法回答，请稍后重试。'
     }
 
