@@ -1,8 +1,11 @@
-import { loadData } from './data-loader.js'
+import scoreData from './score-data.json'
+import enrollData from './enroll-data.json'
 
-export default function handler(req, res) {
-  const { scoreData, enrollData } = loadData()
-  const { table, field, min, max, ...filters } = req.query
+export async function onRequestGet(context) {
+  const { request } = context
+  const url = new URL(request.url)
+  const params = Object.fromEntries(url.searchParams.entries())
+  const { table, field, min, max, ...filters } = params
 
   if (table === 'score') {
     let results = [...scoreData]
@@ -28,7 +31,9 @@ export default function handler(req, res) {
 
     results.sort((a, b) => (parseFloat(b['最低分']) || 0) - (parseFloat(a['最低分']) || 0))
     const columns = ['院校代码', '层次', '院校名称', '学校类型', '专业名称', '录取数', '最高分', '最低分', '备注']
-    return res.status(200).json({ columns, rows: results, total: results.length })
+    return new Response(JSON.stringify({ columns, rows: results, total: results.length }), {
+      headers: { 'Content-Type': 'application/json' }
+    })
   }
 
   if (table === 'enroll') {
@@ -40,8 +45,13 @@ export default function handler(req, res) {
       }
     }
     const columns = ['学校代码', '学校名称', '学校地址', '专业组号', '专业名字', '学费', '备注']
-    return res.status(200).json({ columns, rows: results, total: results.length })
+    return new Response(JSON.stringify({ columns, rows: results, total: results.length }), {
+      headers: { 'Content-Type': 'application/json' }
+    })
   }
 
-  return res.status(400).json({ error: '未知的数据表' })
+  return new Response(JSON.stringify({ error: '未知的数据表' }), {
+    status: 400,
+    headers: { 'Content-Type': 'application/json' }
+  })
 }
