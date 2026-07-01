@@ -101,8 +101,10 @@ function App() {
         body: JSON.stringify({ message: inputMsg, history: messages })
       })
       const data = await res.json()
-      setMessages(prev => [...prev, { role: 'assistant', content: data.reply }])
+      const reply = data.reply || data.error || '抱歉，未获取到回答。'
+      setMessages(prev => [...prev, { role: 'assistant', content: reply }])
     } catch (err) {
+      console.error('Chat error:', err)
       setMessages(prev => [...prev, { role: 'assistant', content: '抱歉，服务暂时不可用，请稍后重试。' }])
     }
     setChatLoading(false)
@@ -329,8 +331,8 @@ function App() {
                       {msg.role === 'assistant' ? '🤖' : '👤'}
                     </div>
                     <div className="message-content">
-                      {msg.content.split('\n').map((line, i) => (
-                        <span key={i}>{line}{i < msg.content.split('\n').length - 1 && <br />}</span>
+                      {(msg.content || '').split('\n').map((line, i) => (
+                        <span key={i}>{line}{i < (msg.content || '').split('\n').length - 1 && <br />}</span>
                       ))}
                     </div>
                   </div>
