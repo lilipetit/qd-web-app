@@ -6,7 +6,7 @@ export async function onRequestPost(context) {
     const message = body.message
     
     const botId = env.COZE_BOT_ID || '7657117728641417222'
-    const apiToken = env.COZE_API_TOKEN || 'cztei_hVm7A1eSadC5fwI9CR5FdMzgJRci16mT6DuGo7b3Wce3uClpsPr9tZrzZQ5q2s4eT'
+    const apiToken = env.COZE_API_TOKEN || 'cztei_hpZBO4yDlYONfY9rdSgQXgLayvrXMA3qxDO3fHeHtXJDHuWn8FB8FjflHBlOFw6XI'
     const apiBase = env.COZE_API_BASE || 'https://api.coze.cn'
 
     console.log('Calling Coze v3 API, bot:', botId, 'message:', message)
